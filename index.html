@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SolArena — Compete. Trade. Win.</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sol-purple: #9945FF;
+    --sol-blue: #14F195;
+    --sol-green: #14F195;
+    --sol-pink: #FF6EC7;
+    --sol-cyan: #00C2FF;
+    --bg-0: #020209;
+    --bg-1: #080818;
+    --bg-2: #0D0D20;
+    --bg-glass: rgba(255,255,255,0.04);
+    --bg-glass-2: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-glow: rgba(153,69,255,0.3);
+    --text-1: #F0EEF8;
+    --text-2: #8A85A8;
+    --text-3: #4E4A6A;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg-0);
+    color: var(--text-1);
+    font-family: var(--font-body);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── NOISE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg-0); }
+  ::-webkit-scrollbar-thumb { background: var(--sol-purple); border-radius: 2px; }
+
+  /* ── UTILITIES ── */
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--sol-green); border: 1px solid rgba(20,241,149,0.25);
+    background: rgba(20,241,149,0.06); padding: 5px 12px; border-radius: 100px;
+  }
+  .tag::before { content: ''; width: 6px; height: 6px; background: var(--sol-green); border-radius: 50%; animation: pulse-dot 2s infinite; }
+  @keyframes pulse-dot {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.7); }
+  }
+
+  .glow-text {
+    background: linear-gradient(135deg, #fff 0%, var(--sol-purple) 50%, var(--sol-green) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .glass-card {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  }
+  .glass-card:hover {
+    border-color: var(--border-glow);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 60px rgba(153,69,255,0.12);
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--sol-purple), #6E2CDB);
+    color: #fff; font-family: var(--font-display); font-weight: 600; font-size: 14px;
+    padding: 13px 28px; border-radius: 12px; border: none; cursor: pointer;
+    text-decoration: none; letter-spacing: 0.02em;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 0 30px rgba(153,69,255,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(153,69,255,0.5); }
+
+  .btn-secondary {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--bg-glass-2); color: var(--text-1);
+    font-family: var(--font-display); font-weight: 600; font-size: 14px;
+    padding: 13px 28px; border-radius: 12px; border: 1px solid var(--border);
+    cursor: pointer; text-decoration: none; letter-spacing: 0.02em;
+    transition: border-color 0.2s, background 0.2s, transform 0.2s;
+  }
+  .btn-secondary:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.1); transform: translateY(-2px); }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    padding: 18px 0;
+    border-bottom: 1px solid transparent;
+    transition: background 0.4s, border-color 0.4s, backdrop-filter 0.4s;
+  }
+  nav.scrolled {
+    background: rgba(2,2,9,0.85);
+    border-color: var(--border);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .nav-inner {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--font-display); font-size: 22px; font-weight: 800;
+    text-decoration: none; color: var(--text-1);
+  }
+  .nav-logo-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--sol-purple), var(--sol-green));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .nav-links {
+    display: flex; align-items: center; gap: 32px; list-style: none;
+  }
+  .nav-links a {
+    text-decoration: none; color: var(--text-2); font-size: 14px; font-weight: 500;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text-1); }
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  .nav-prize {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(20,241,149,0.08); border: 1px solid rgba(20,241,149,0.2);
+    padding: 7px 14px; border-radius: 10px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--sol-green);
+  }
+  .nav-prize span { animation: count-up 3s ease-out; }
+
+  @media (max-width: 768px) {
+    .nav-links, .nav-prize { display: none; }
+    /* Shrink wallet button to icon-only pill on mobile */
+    .nav-actions .btn-primary { padding: 9px 14px; font-size: 13px; }
+  }
+  @media (max-width: 400px) {
+    .nav-actions .btn-primary .btn-label { display: none; }
+    .nav-actions .btn-primary { padding: 9px 12px; }
+  }
+
+  /* Hamburger */
+  .nav-hamburger {
+    display: none; flex-direction: column; gap: 5px; cursor: pointer;
+    padding: 4px; background: none; border: none;
+  }
+  .nav-hamburger span {
+    display: block; width: 22px; height: 2px;
+    background: var(--text-1); border-radius: 2px;
+    transition: transform 0.3s, opacity 0.3s;
+  }
+  .nav-hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .nav-hamburger.open span:nth-child(2) { opacity: 0; }
+  .nav-hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  @media (max-width: 768px) { .nav-hamburger { display: flex; } }
+
+  /* Mobile drawer */
+  .nav-drawer {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(2,2,9,0.97); backdrop-filter: blur(20px);
+    z-index: 99; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .nav-drawer.open { opacity: 1; pointer-events: all; }
+  @media (max-width: 768px) { .nav-drawer { display: flex; } }
+  .nav-drawer a {
+    font-family: var(--font-display); font-size: 26px; font-weight: 700;
+    color: var(--text-2); text-decoration: none; padding: 16px 0;
+    border-bottom: 1px solid var(--border); width: 80%; text-align: center;
+    transition: color 0.2s;
+  }
+  .nav-drawer a:last-of-type { border-bottom: none; }
+  .nav-drawer a:hover { color: var(--text-1); }
+  .nav-drawer .drawer-cta {
+    margin-top: 28px; width: 80%;
+    background: linear-gradient(135deg, var(--sol-purple), #6E2CDB);
+    color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 16px;
+    padding: 16px; border-radius: 14px; border: none; cursor: pointer;
+    text-decoration: none; text-align: center;
+    box-shadow: 0 0 30px rgba(153,69,255,0.35);
+  }
+
+  /* ── HERO ── */
+  .hero {
+    min-height: 100vh;
+    display: flex; flex-direction: column; justify-content: center;
+    position: relative; overflow: hidden;
+    padding: 120px 0 80px;
+  }
+
+  /* Background mesh */
+  .hero-bg {
+    position: absolute; inset: 0; pointer-events: none;
+  }
+  .hero-bg-orb {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); animation: orb-float 8s ease-in-out infinite;
+  }
+  .hero-bg-orb.orb1 {
+    width: 600px; height: 600px;
+    background: radial-gradient(circle, rgba(153,69,255,0.2) 0%, transparent 70%);
+    top: -100px; left: -100px;
+    animation-delay: 0s;
+  }
+  .hero-bg-orb.orb2 {
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(20,241,149,0.12) 0%, transparent 70%);
+    bottom: -100px; right: -50px;
+    animation-delay: -3s;
+  }
+  .hero-bg-orb.orb3 {
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(0,194,255,0.1) 0%, transparent 70%);
+    top: 40%; left: 50%;
+    animation-delay: -6s;
+  }
+  @keyframes orb-float {
+    0%,100% { transform: translate(0,0) scale(1); }
+    33% { transform: translate(30px,-30px) scale(1.05); }
+    66% { transform: translate(-20px,20px) scale(0.95); }
+  }
+
+  /* Grid lines */
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(153,69,255,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(153,69,255,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 0%, transparent 100%);
+  }
+
+  .hero-content {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center;
+  }
+  @media (max-width: 900px) {
+    .hero-content { grid-template-columns: 1fr; }
+    .hero-visual { display: none; }
+  }
+
+  .hero-tag { margin-bottom: 24px; }
+  .hero-headline {
+    font-family: var(--font-display); font-size: clamp(52px, 7vw, 84px);
+    font-weight: 800; line-height: 1.0; letter-spacing: -0.02em;
+    margin-bottom: 20px;
+  }
+  .hero-sub {
+    font-size: 18px; color: var(--text-2); line-height: 1.7;
+    max-width: 480px; margin-bottom: 36px;
+  }
+  .hero-ctas { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 50px; }
+
+  .hero-stats {
+    display: flex; gap: 32px; padding-top: 28px;
+    border-top: 1px solid var(--border);
+  }
+  .hero-stat-label {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+    letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px;
+  }
+  .hero-stat-val {
+    font-family: var(--font-display); font-size: 26px; font-weight: 700;
+  }
+  .hero-stat-val.green { color: var(--sol-green); }
+  .hero-stat-val.purple { color: var(--sol-purple); }
+
+  /* Hero Visual — floating chart card */
+  .hero-visual { position: relative; }
+  .hero-card-main {
+    background: var(--bg-glass-2);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 24px;
+    backdrop-filter: blur(30px);
+    box-shadow: 0 30px 80px rgba(0,0,0,0.4), 0 0 0 1px rgba(153,69,255,0.1);
+    animation: card-float 6s ease-in-out infinite;
+  }
+  @keyframes card-float {
+    0%,100% { transform: translateY(0px) rotate(0deg); }
+    50% { transform: translateY(-12px) rotate(0.5deg); }
+  }
+  .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .chart-pair { font-family: var(--font-display); font-weight: 700; font-size: 18px; }
+  .chart-change {
+    font-family: var(--font-mono); font-size: 12px; color: var(--sol-green);
+    background: rgba(20,241,149,0.1); border: 1px solid rgba(20,241,149,0.2);
+    padding: 4px 10px; border-radius: 8px;
+  }
+  .chart-price {
+    font-family: var(--font-mono); font-size: 32px; font-weight: 500; margin-bottom: 16px;
+    color: var(--text-1);
+  }
+
+  /* SVG mini chart */
+  .sparkline { width: 100%; height: 80px; margin-bottom: 16px; }
+
+  .chart-row {
+    display: flex; gap: 12px;
+  }
+  .chart-mini {
+    flex: 1; background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border); border-radius: 12px; padding: 12px;
+  }
+  .chart-mini-label { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 4px; }
+  .chart-mini-val { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+  .chart-mini-val.up { color: var(--sol-green); }
+  .chart-mini-val.down { color: #FF5E7D; }
+
+  /* Floating badges */
+  .float-badge {
+    position: absolute;
+    background: var(--bg-glass-2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 10px 16px; backdrop-filter: blur(20px);
+    display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+  }
+  .float-badge.b1 {
+    top: -20px; right: -20px;
+    animation: card-float 5s ease-in-out infinite; animation-delay: -2s;
+  }
+  .float-badge.b2 {
+    bottom: 60px; left: -30px;
+    animation: card-float 7s ease-in-out infinite; animation-delay: -4s;
+  }
+  .badge-icon { font-size: 22px; }
+  .badge-label { font-size: 11px; color: var(--text-3); }
+  .badge-val { font-family: var(--font-display); font-weight: 700; font-size: 15px; }
+
+  /* ── FEATURES ── */
+  section { padding: 100px 0; }
+  .section-header { text-align: center; margin-bottom: 60px; }
+  .section-title {
+    font-family: var(--font-display); font-size: clamp(36px, 5vw, 54px);
+    font-weight: 800; line-height: 1.1; margin: 12px 0 16px;
+  }
+  .section-sub { font-size: 17px; color: var(--text-2); max-width: 500px; margin: 0 auto; }
+
+  .features-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 16px;
+  }
+  .feature-card {
+    padding: 28px;
+  }
+  .feature-icon {
+    width: 50px; height: 50px; border-radius: 14px; margin-bottom: 18px;
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .feature-icon.purple { background: rgba(153,69,255,0.15); border: 1px solid rgba(153,69,255,0.25); }
+  .feature-icon.green { background: rgba(20,241,149,0.1); border: 1px solid rgba(20,241,149,0.2); }
+  .feature-icon.cyan { background: rgba(0,194,255,0.1); border: 1px solid rgba(0,194,255,0.2); }
+  .feature-icon.pink { background: rgba(255,110,199,0.1); border: 1px solid rgba(255,110,199,0.2); }
+  .feature-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 8px; }
+  .feature-desc { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+
+  /* ── TOURNAMENTS ── */
+  .tournaments-section { background: linear-gradient(180deg, transparent 0%, rgba(153,69,255,0.04) 50%, transparent 100%); }
+  .tournaments-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .tournament-card { padding: 28px; position: relative; overflow: hidden; }
+  .tournament-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--sol-purple), var(--sol-green));
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .tournament-card:hover::before { opacity: 1; }
+
+  .t-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 4px 10px; border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  .t-badge.live {
+    color: var(--sol-green); background: rgba(20,241,149,0.08);
+    border: 1px solid rgba(20,241,149,0.2);
+  }
+  .t-badge.live::before { content: ''; width: 5px; height: 5px; background: var(--sol-green); border-radius: 50%; animation: pulse-dot 1.5s infinite; }
+  .t-badge.soon { color: var(--sol-cyan); background: rgba(0,194,255,0.08); border: 1px solid rgba(0,194,255,0.2); }
+  .t-badge.featured { color: var(--sol-pink); background: rgba(255,110,199,0.08); border: 1px solid rgba(255,110,199,0.2); }
+
+  .t-name { font-family: var(--font-display); font-weight: 700; font-size: 22px; margin-bottom: 6px; word-break: break-word; }
+  .t-desc { font-size: 13px; color: var(--text-2); margin-bottom: 20px; }
+
+  .t-pool {
+    text-align: center; padding: 16px;
+    background: rgba(153,69,255,0.08); border: 1px solid rgba(153,69,255,0.15);
+    border-radius: 14px; margin-bottom: 20px;
+  }
+  .t-pool-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; }
+  .t-pool-val { font-family: var(--font-display); font-weight: 800; font-size: 32px; }
+  .t-pool-val span { background: linear-gradient(135deg, var(--sol-purple), var(--sol-green)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  .t-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .t-meta-item { text-align: center; }
+  .t-meta-label { font-family: var(--font-mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+  .t-meta-val { font-family: var(--font-display); font-weight: 600; font-size: 14px; }
+
+  .t-timer {
+    display: flex; justify-content: center; gap: 8px; margin-bottom: 20px;
+  }
+  .t-timer-block {
+    text-align: center; background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+  }
+  .t-timer-num { font-family: var(--font-mono); font-size: 22px; font-weight: 500; line-height: 1; }
+  .t-timer-lab { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px; }
+
+  .t-progress { margin-bottom: 20px; }
+  .t-progress-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-2); margin-bottom: 6px; }
+  .t-progress-bar { height: 4px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+  .t-progress-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--sol-purple), var(--sol-green)); transition: width 1s ease; }
+
+  .btn-join {
+    width: 100%; padding: 14px;
+    background: linear-gradient(135deg, var(--sol-purple), #6E2CDB);
+    border: none; border-radius: 12px; color: #fff;
+    font-family: var(--font-display); font-weight: 700; font-size: 15px;
+    cursor: pointer; letter-spacing: 0.02em;
+    transition: transform 0.2s, box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(153,69,255,0.3);
+  }
+  .btn-join:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(153,69,255,0.5); }
+  .btn-join.btn-soon { background: rgba(255,255,255,0.06); border: 1px solid var(--border); color: var(--text-2); box-shadow: none; }
+  .btn-join.btn-soon:hover { border-color: var(--border-glow); color: var(--text-1); }
+
+  /* ── LEADERBOARD ── */
+  .leaderboard-section { }
+  .lb-table {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: 24px; overflow: hidden;
+    width: 100%; max-width: 100%;
+  }
+  .lb-header {
+    display: grid; grid-template-columns: 60px 1fr 120px 120px 120px 140px;
+    padding: 14px 24px;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono); font-size: 11px; color: var(--text-3);
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  @media (max-width: 768px) {
+    .lb-header { grid-template-columns: 44px 1fr 90px; padding: 12px 14px; }
+    .lb-col-hide { display: none; }
+  }
+  .lb-row {
+    display: grid; grid-template-columns: 60px 1fr 120px 120px 120px 140px;
+    padding: 16px 24px; align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    transition: background 0.2s;
+  }
+  .lb-row:hover { background: rgba(255,255,255,0.03); }
+  .lb-row:last-child { border-bottom: none; }
+  @media (max-width: 768px) {
+    .lb-row { grid-template-columns: 44px 1fr 90px; padding: 12px 14px; }
+  }
+  .lb-rank {
+    font-family: var(--font-display); font-weight: 800; font-size: 18px; color: var(--text-3);
+  }
+  .lb-rank.rank-1 { color: #FFD700; }
+  .lb-rank.rank-2 { color: #C0C0C0; }
+  .lb-rank.rank-3 { color: #CD7F32; }
+
+  .lb-user { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .lb-user-info { min-width: 0; overflow: hidden; }
+  .lb-name { font-weight: 600; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lb-handle { font-family: var(--font-mono); font-size: 12px; color: var(--text-3); white-space: nowrap; }
+  .lb-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; border: 2px solid var(--border);
+    position: relative; flex-shrink: 0;
+  }
+  .lb-avatar.gold { border-color: #FFD700; box-shadow: 0 0 12px rgba(255,215,0,0.3); }
+  .lb-avatar.silver { border-color: #C0C0C0; }
+  .lb-avatar.bronze { border-color: #CD7F32; }
+
+  .lb-roi { font-family: var(--font-mono); font-weight: 500; }
+  .lb-roi.pos { color: var(--sol-green); }
+  .lb-roi.neg { color: #FF5E7D; }
+
+  .lb-pnl { font-family: var(--font-display); font-weight: 600; }
+  .lb-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .lb-badge {
+    font-size: 9px; font-family: var(--font-mono); letter-spacing: 0.06em;
+    padding: 3px 7px; border-radius: 5px; text-transform: uppercase;
+  }
+  .lb-badge.champ { background: rgba(255,215,0,0.12); color: #FFD700; border: 1px solid rgba(255,215,0,0.25); }
+  .lb-badge.streak { background: rgba(153,69,255,0.12); color: var(--sol-purple); border: 1px solid rgba(153,69,255,0.25); }
+  .lb-badge.whale { background: rgba(0,194,255,0.1); color: var(--sol-cyan); border: 1px solid rgba(0,194,255,0.2); }
+  .lb-badge.degen { background: rgba(255,110,199,0.1); color: var(--sol-pink); border: 1px solid rgba(255,110,199,0.2); }
+
+  .lb-winnings { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--sol-green); }
+
+  /* ── HOW IT WORKS ── */
+  .how-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px; position: relative;
+  }
+  .how-step {
+    text-align: center; padding: 32px 24px;
+    position: relative;
+  }
+  .how-num {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, rgba(153,69,255,0.2), rgba(20,241,149,0.1));
+    border: 1px solid rgba(153,69,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 22px; font-weight: 800;
+    margin: 0 auto 20px;
+  }
+  .how-icon { font-size: 28px; margin-bottom: 16px; }
+  .how-title { font-family: var(--font-display); font-weight: 700; font-size: 18px; margin-bottom: 10px; }
+  .how-desc { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+
+  /* ── COMMUNITY ── */
+  .community-section { background: linear-gradient(180deg, transparent 0%, rgba(20,241,149,0.03) 50%, transparent 100%); }
+  .community-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  @media (max-width: 768px) { .community-grid { grid-template-columns: 1fr; } }
+
+  .community-discord {
+    padding: 36px; border-radius: 24px;
+    background: linear-gradient(135deg, rgba(88,101,242,0.15), rgba(153,69,255,0.1));
+    border: 1px solid rgba(88,101,242,0.25);
+    text-align: center;
+  }
+  .discord-logo { font-size: 48px; margin-bottom: 16px; }
+  .discord-title { font-family: var(--font-display); font-weight: 700; font-size: 24px; margin-bottom: 8px; }
+  .discord-sub { color: var(--text-2); font-size: 14px; margin-bottom: 24px; }
+  .discord-stats { display: flex; justify-content: center; gap: 32px; margin-bottom: 28px; }
+  .discord-stat-val { font-family: var(--font-display); font-weight: 700; font-size: 20px; }
+  .discord-stat-label { font-size: 12px; color: var(--text-3); }
+  .btn-discord {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: #5865F2; color: #fff; padding: 12px 28px; border-radius: 12px;
+    font-family: var(--font-display); font-weight: 600; font-size: 14px;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .btn-discord:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(88,101,242,0.4); }
+
+  .testimonials { display: flex; flex-direction: column; gap: 16px; }
+  .testimonial {
+    padding: 20px 22px;
+    border-radius: 16px;
+  }
+  .t-quote { font-size: 14px; color: var(--text-1); line-height: 1.7; margin-bottom: 14px; font-style: italic; }
+  .t-quote::before { content: '"'; font-size: 20px; color: var(--sol-purple); font-style: normal; }
+  .t-author { display: flex; align-items: center; gap: 10px; }
+  .t-author-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .t-author-name { font-weight: 600; font-size: 13px; }
+  .t-author-handle { font-family: var(--font-mono); font-size: 11px; color: var(--text-3); }
+  .t-stars { color: #FFD700; font-size: 12px; margin-left: auto; }
+
+  .winners-feed { display: flex; flex-direction: column; gap: 12px; }
+  .winner-row {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 14px;
+  }
+  .winner-emoji { font-size: 22px; }
+  .winner-info { flex: 1; }
+  .winner-name { font-weight: 600; font-size: 14px; }
+  .winner-detail { font-size: 12px; color: var(--text-2); margin-top: 1px; }
+  .winner-amount { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--sol-green); }
+
+  /* ── PAYOUTS TICKER ── */
+  .ticker-wrap {
+    overflow: hidden; padding: 16px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: rgba(20,241,149,0.02);
+    margin: 60px 0;
+  }
+  .ticker-track {
+    display: flex; gap: 60px;
+    animation: ticker-scroll 30s linear infinite;
+    white-space: nowrap;
+  }
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  .ticker-item {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 13px; color: var(--text-2);
+  }
+  .ticker-item .green { color: var(--sol-green); }
+  .ticker-item .user { color: var(--text-1); font-weight: 500; }
+
+  /* ── STATS BAND ── */
+  .stats-band {
+    padding: 60px 0;
+    background: linear-gradient(135deg, rgba(153,69,255,0.06), rgba(20,241,149,0.04));
+    border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  }
+  .stats-band-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+  @media (max-width: 640px) { .stats-band-grid { grid-template-columns: repeat(2, 1fr); } }
+  .stat-band-item { text-align: center; }
+  .stat-band-val { font-family: var(--font-display); font-weight: 800; font-size: 36px; margin-bottom: 6px; }
+  .stat-band-label { font-size: 13px; color: var(--text-2); }
+
+  /* ── FOOTER ── */
+  footer {
+    padding: 80px 0 40px;
+    border-top: 1px solid var(--border);
+  }
+  .footer-top {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 60px;
+  }
+  @media (max-width: 768px) {
+    .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+  }
+  .footer-brand-tagline { font-size: 14px; color: var(--text-2); line-height: 1.7; margin: 12px 0 20px; max-width: 280px; }
+  .footer-socials { display: flex; gap: 10px; }
+  .footer-social {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--bg-glass-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; text-decoration: none; transition: border-color 0.2s, background 0.2s;
+  }
+  .footer-social:hover { border-color: var(--border-glow); background: rgba(153,69,255,0.1); }
+  .footer-col-title { font-family: var(--font-display); font-weight: 700; font-size: 14px; margin-bottom: 16px; color: var(--text-1); }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .footer-links a { text-decoration: none; font-size: 14px; color: var(--text-2); transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text-1); }
+  .footer-bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 28px; border-top: 1px solid var(--border);
+    gap: 16px; flex-wrap: wrap;
+  }
+  .footer-copy { font-size: 13px; color: var(--text-3); }
+  .footer-legal { display: flex; gap: 20px; }
+  .footer-legal a { font-size: 13px; color: var(--text-3); text-decoration: none; transition: color 0.2s; }
+  .footer-legal a:hover { color: var(--text-2); }
+  .sol-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--font-mono); font-size: 12px;
+    background: rgba(153,69,255,0.08); border: 1px solid rgba(153,69,255,0.2);
+    color: var(--sol-purple); padding: 5px 12px; border-radius: 8px;
+  }
+
+  /* ── FAQ ── */
+  .faq-list { display: flex; flex-direction: column; gap: 2px; }
+  .faq-item {
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .faq-item.open { border-color: rgba(153,69,255,0.3); }
+  .faq-q {
+    padding: 18px 22px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 600; font-size: 15px; user-select: none;
+    transition: background 0.2s;
+  }
+  .faq-q:hover { background: rgba(255,255,255,0.02); }
+  .faq-icon {
+    font-size: 20px; color: var(--text-3); transition: transform 0.3s; flex-shrink: 0;
+  }
+  .faq-item.open .faq-icon { transform: rotate(45deg); color: var(--sol-purple); }
+  .faq-a {
+    max-height: 0; overflow: hidden;
+    font-size: 14px; color: var(--text-2); line-height: 1.7;
+    transition: max-height 0.4s ease, padding 0.3s;
+    padding: 0 22px;
+  }
+  .faq-item.open .faq-a { max-height: 300px; padding: 0 22px 18px; }
+
+  /* ── ANIMATIONS ── */
+  .reveal {
+    opacity: 0; transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ══════════════════════════════════════
+     MOBILE RESPONSIVE — comprehensive
+  ══════════════════════════════════════ */
+  @media (max-width: 480px) {
+
+    /* Container */
+    .container { padding: 0 16px; }
+
+    /* Nav */
+    nav { padding: 14px 0; }
+    .nav-logo { font-size: 19px; }
+    .nav-logo-icon { width: 30px; height: 30px; font-size: 15px; }
+    .nav-actions .btn-primary { padding: 9px 16px; font-size: 13px; }
+
+    /* Sections */
+    section { padding: 60px 0; }
+
+    /* Hero */
+    .hero { padding: 100px 0 60px; min-height: auto; }
+    .hero-headline { font-size: 46px; }
+    .hero-sub { font-size: 15px; }
+    .hero-ctas { flex-direction: column; gap: 10px; }
+    .hero-ctas .btn-primary,
+    .hero-ctas .btn-secondary { width: 100%; justify-content: center; padding: 14px 20px; }
+    .hero-stats { gap: 0; display: grid; grid-template-columns: repeat(3,1fr); }
+    .hero-stats > div { text-align: center; padding: 0 4px; }
+    .hero-stat-val { font-size: 18px; }
+    .hero-stat-label { font-size: 9px; }
+
+    /* Stats band */
+    .stats-band { padding: 40px 0; }
+    .stats-band-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+    .stat-band-val { font-size: 26px; }
+    .stat-band-label { font-size: 12px; }
+
+    /* Ticker */
+    .ticker-wrap { margin: 40px 0; }
+    .ticker-item { font-size: 12px; }
+
+    /* Section headers */
+    .section-header { margin-bottom: 36px; }
+    .section-title { font-size: 30px; }
+    .section-sub { font-size: 14px; }
+
+    /* Features */
+    .features-grid { grid-template-columns: 1fr; gap: 12px; }
+    .feature-card { padding: 22px; }
+    .feature-icon { width: 44px; height: 44px; font-size: 20px; margin-bottom: 14px; }
+    .feature-title { font-size: 16px; }
+
+    /* How it works */
+    .how-grid { grid-template-columns: 1fr; gap: 12px; }
+    .how-step { padding: 24px 20px; }
+    .how-num { width: 44px; height: 44px; font-size: 18px; margin-bottom: 14px; }
+
+    /* Tournaments */
+    .tournaments-grid { grid-template-columns: 1fr; gap: 16px; }
+    .tournament-card { padding: 20px; }
+    .t-name { font-size: 19px; }
+    .t-pool-val { font-size: 26px; }
+    .t-meta { gap: 8px; }
+    .t-meta-val { font-size: 13px; }
+    .t-timer-num { font-size: 18px; }
+    .t-timer-block { padding: 7px 10px; }
+
+    /* Leaderboard */
+    .lb-header,
+    .lb-row {
+      grid-template-columns: 36px 1fr 82px;
+      padding: 11px 12px;
+    }
+    .lb-rank { font-size: 14px; }
+    .lb-avatar { width: 30px; height: 30px; font-size: 13px; }
+    .lb-name { font-size: 13px; }
+    .lb-handle { font-size: 10px; }
+    .lb-winnings { font-size: 13px; }
+    .lb-user { gap: 8px; }
+
+    /* Community */
+    .community-discord { padding: 24px 20px; }
+    .discord-logo { font-size: 36px; }
+    .discord-title { font-size: 20px; }
+    .discord-stats { gap: 20px; }
+    .testimonial { padding: 16px 18px; }
+    .t-stars { display: none; }
+
+    /* Winners */
+    .winner-row { padding: 12px 14px; }
+    .winner-amount { font-size: 13px; }
+
+    /* CTA banner */
+    .cta-banner { padding: 40px 0; }
+    .cta-inner { padding: 36px 20px; border-radius: 20px; }
+    .cta-inner h2 { font-size: 28px; }
+    .cta-inner p { font-size: 14px; }
+    .cta-btns { flex-direction: column; gap: 10px; }
+    .cta-btns .btn-primary,
+    .cta-btns .btn-secondary { width: 100%; justify-content: center; }
+
+    /* FAQ */
+    .faq-q { font-size: 14px; padding: 16px 18px; }
+    .faq-a { font-size: 13px; }
+    .faq-item.open .faq-a { padding: 0 18px 16px; }
+
+    /* Footer */
+    footer { padding: 52px 0 32px; }
+    .footer-top { grid-template-columns: 1fr; gap: 28px; margin-bottom: 36px; }
+    .footer-brand-tagline { max-width: 100%; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 12px; }
+  }
+
+  /* Tablet — 481px to 768px */
+  @media (min-width: 481px) and (max-width: 768px) {
+    .container { padding: 0 20px; }
+    section { padding: 72px 0; }
+
+    .hero { padding: 110px 0 64px; }
+    .hero-headline { font-size: 54px; }
+    .hero-sub { font-size: 16px; }
+    .hero-ctas { gap: 12px; }
+    .hero-stats { gap: 20px; }
+    .hero-stat-val { font-size: 22px; }
+
+    .stats-band-grid { grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .stat-band-val { font-size: 30px; }
+
+    .features-grid { grid-template-columns: 1fr; gap: 14px; }
+    .tournaments-grid { grid-template-columns: 1fr; gap: 16px; }
+    .how-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .cta-inner { padding: 48px 28px; }
+    .cta-btns { flex-direction: column; align-items: center; gap: 10px; }
+    .cta-btns .btn-primary,
+    .cta-btns .btn-secondary { width: 100%; max-width: 320px; justify-content: center; }
+
+    .footer-top { grid-template-columns: 1fr 1fr; gap: 28px; }
+    .footer-bottom { flex-direction: column; align-items: flex-start; gap: 10px; }
+  }
+
+  /* CTA banner */
+  .cta-banner {
+    padding: 80px 0;
+    text-align: center;
+  }
+  .cta-inner {
+    padding: 60px 40px;
+    border-radius: 28px;
+    background: linear-gradient(135deg, rgba(153,69,255,0.15), rgba(20,241,149,0.08));
+    border: 1px solid rgba(153,69,255,0.2);
+    position: relative; overflow: hidden;
+  }
+  .cta-inner::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse 60% 60% at 50% 100%, rgba(153,69,255,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .cta-inner h2 { font-family: var(--font-display); font-weight: 800; font-size: clamp(32px, 5vw, 52px); margin-bottom: 14px; }
+  .cta-inner p { color: var(--text-2); font-size: 17px; margin-bottom: 32px; }
+  .cta-inner .cta-btns { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-icon">⚡</div>
+      SolArena
+    </a>
+    <ul class="nav-links">
+      <li><a href="#tournaments">Tournaments</a></li>
+      <li><a href="#leaderboard">Leaderboard</a></li>
+      <li><a href="#how">How it Works</a></li>
+      <li><a href="#community">Community</a></li>
+      <li><a href="#faq">FAQ</a></li>
+    </ul>
+    <div class="nav-actions">
+      <div class="nav-prize">
+        🏆 <span id="prize-counter">$284,500</span> in prizes
+      </div>
+      <a href="#" class="btn-primary">⚡ <span class="btn-label">Connect Wallet</span></a>
+      <button class="nav-hamburger" id="hamburger" aria-label="Open menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- MOBILE DRAWER -->
+<div class="nav-drawer" id="nav-drawer">
+  <a href="#tournaments" class="drawer-link">Tournaments</a>
+  <a href="#leaderboard" class="drawer-link">Leaderboard</a>
+  <a href="#how" class="drawer-link">How it Works</a>
+  <a href="#community" class="drawer-link">Community</a>
+  <a href="#faq" class="drawer-link">FAQ</a>
+  <a href="#" class="drawer-cta">⚡ Connect Wallet</a>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-bg-orb orb1"></div>
+    <div class="hero-bg-orb orb2"></div>
+    <div class="hero-bg-orb orb3"></div>
+    <div class="hero-grid"></div>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="hero-tag tag">
+          Season 4 Live Now
+        </div>
+        <h1 class="hero-headline">
+          <span class="glow-text">Compete.</span><br>
+          Trade.<br>
+          Win.
+        </h1>
+        <p class="hero-sub">
+          The first Solana-powered meme coin trading arena where skill earns real rewards. Build your virtual portfolio, outperform the field, claim the prize pool.
+        </p>
+        <div class="hero-ctas">
+          <a href="#tournaments" class="btn-primary">⚡ Join Tournament</a>
+          <a href="#leaderboard" class="btn-secondary">📊 View Leaderboard</a>
+        </div>
+        <div class="hero-stats">
+          <div>
+            <div class="hero-stat-label">Live Prize Pool</div>
+            <div class="hero-stat-val green" id="live-pool">$48,200</div>
+          </div>
+          <div>
+            <div class="hero-stat-label">Active Traders</div>
+            <div class="hero-stat-val purple">12,847</div>
+          </div>
+          <div>
+            <div class="hero-stat-label">Total Paid Out</div>
+            <div class="hero-stat-val">$2.4M</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="float-badge b1">
+          <div class="badge-icon">🟢</div>
+          <div>
+            <div class="badge-label">BONK/SOL</div>
+            <div class="badge-val" style="color:var(--sol-green)">+312.4%</div>
+          </div>
+        </div>
+        <div class="float-badge b2">
+          <div class="badge-icon">👑</div>
+          <div>
+            <div class="badge-label">Top Trader</div>
+            <div class="badge-val">@sol_shark</div>
+          </div>
+        </div>
+        <div class="hero-card-main">
+          <div class="chart-header">
+            <div class="chart-pair">WIF / USDC</div>
+            <div class="chart-change">↑ +48.2% today</div>
+          </div>
+          <div class="chart-price">$3.2841</div>
+          <svg class="sparkline" viewBox="0 0 300 80" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#14F195" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#14F195" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path d="M0,70 L20,65 L40,68 L60,55 L80,50 L100,42 L120,38 L140,30 L160,25 L180,18 L200,22 L220,15 L240,10 L260,8 L280,5 L300,3" fill="none" stroke="#14F195" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M0,70 L20,65 L40,68 L60,55 L80,50 L100,42 L120,38 L140,30 L160,25 L180,18 L200,22 L220,15 L240,10 L260,8 L280,5 L300,3 L300,80 L0,80 Z" fill="url(#chartGrad)"/>
+            <circle cx="300" cy="3" r="4" fill="#14F195" opacity="0.9">
+              <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/>
+            </circle>
+          </svg>
+          <div class="chart-row">
+            <div class="chart-mini">
+              <div class="chart-mini-label">BONK</div>
+              <div class="chart-mini-val up">+89.4%</div>
+            </div>
+            <div class="chart-mini">
+              <div class="chart-mini-label">MYRO</div>
+              <div class="chart-mini-val up">+127%</div>
+            </div>
+            <div class="chart-mini">
+              <div class="chart-mini-label">POPCAT</div>
+              <div class="chart-mini-val down">-12.3%</div>
+            </div>
+            <div class="chart-mini">
+              <div class="chart-mini-label">MOG</div>
+              <div class="chart-mini-val up">+44.8%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAND -->
+<div class="stats-band">
+  <div class="container">
+    <div class="stats-band-grid">
+      <div class="stat-band-item reveal">
+        <div class="stat-band-val glow-text">$2.4M+</div>
+        <div class="stat-band-label">Total Prize Money Distributed</div>
+      </div>
+      <div class="stat-band-item reveal">
+        <div class="stat-band-val" style="color:var(--sol-green)">48,302</div>
+        <div class="stat-band-label">Registered Competitors</div>
+      </div>
+      <div class="stat-band-item reveal">
+        <div class="stat-band-val" style="color:var(--sol-purple)">1,240</div>
+        <div class="stat-band-label">Tournaments Completed</div>
+      </div>
+      <div class="stat-band-item reveal">
+        <div class="stat-band-val">0.3s</div>
+        <div class="stat-band-label">Avg. Settlement on Solana</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker">
+    <span class="ticker-item">🏆 <span class="user">@crypto_phoenix</span> won <span class="green">+$4,200</span> in Weekly Meme Madness</span>
+    <span class="ticker-item">⚡ <span class="user">@sol_degen99</span> achieved +842% ROI in BONK Sprint</span>
+    <span class="ticker-item">🎯 <span class="user">@ape_lord</span> just joined the $50K Grand Slam</span>
+    <span class="ticker-item">💰 <span class="user">@moonwatcher</span> cashed out <span class="green">$8,750</span> today</span>
+    <span class="ticker-item">🔥 <span class="user">@wifhat_trader</span> on a 12-tournament win streak</span>
+    <span class="ticker-item">🚀 New tournament: <span class="green">WIF Legends Cup</span> — $25K pool open</span>
+    <span class="ticker-item">🏆 <span class="user">@crypto_phoenix</span> won <span class="green">+$4,200</span> in Weekly Meme Madness</span>
+    <span class="ticker-item">⚡ <span class="user">@sol_degen99</span> achieved +842% ROI in BONK Sprint</span>
+    <span class="ticker-item">🎯 <span class="user">@ape_lord</span> just joined the $50K Grand Slam</span>
+    <span class="ticker-item">💰 <span class="user">@moonwatcher</span> cashed out <span class="green">$8,750</span> today</span>
+    <span class="ticker-item">🔥 <span class="user">@wifhat_trader</span> on a 12-tournament win streak</span>
+    <span class="ticker-item">🚀 New tournament: <span class="green">WIF Legends Cup</span> — $25K pool open</span>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features" style="padding-top:60px;">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">Platform Features</div>
+      <h2 class="section-title">Everything you need to<br><span class="glow-text">dominate the arena</span></h2>
+      <p class="section-sub">Built on Solana for speed, fairness, and real-time performance.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon purple">⚡</div>
+        <div class="feature-title">Real-Time Trading Competitions</div>
+        <div class="feature-desc">Trade live meme coins using virtual portfolios backed by real Solana DEX prices. Every tick, every wick matters. Powered by Jupiter aggregator data.</div>
+      </div>
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon green">📊</div>
+        <div class="feature-title">Live Leaderboards</div>
+        <div class="feature-desc">Watch rankings shift in real-time as traders make their moves. Millisecond-accurate P&L tracking with on-chain verification.</div>
+      </div>
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon cyan">🏆</div>
+        <div class="feature-title">Weekly Prize Pools</div>
+        <div class="feature-desc">From $1K sprint tournaments to $100K Grand Slam events. Entry fees fund the prize pools — top performers take home the bag.</div>
+      </div>
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon purple">👛</div>
+        <div class="feature-title">Solana Wallet Integration</div>
+        <div class="feature-desc">Connect Phantom, Backpack, Solflare, or any Solana wallet. Pay entry fees and receive winnings in SOL or USDC instantly.</div>
+      </div>
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon pink">🎁</div>
+        <div class="feature-title">Referral Rewards</div>
+        <div class="feature-desc">Earn 10% of every entry fee paid by traders you refer — forever. The more you spread the arena, the more passive income you generate.</div>
+      </div>
+      <div class="feature-card glass-card reveal">
+        <div class="feature-icon green">🌍</div>
+        <div class="feature-title">Community Rankings</div>
+        <div class="feature-desc">Season-long leaderboards, XP, achievement badges, and on-chain trophy NFTs. Build your legend across every tournament.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">Process</div>
+      <h2 class="section-title">Up and trading in<br><span class="glow-text">4 simple steps</span></h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step glass-card reveal">
+        <div class="how-num">01</div>
+        <div class="how-icon">👛</div>
+        <div class="how-title">Connect Your Wallet</div>
+        <div class="how-desc">Link your Solana wallet in one click. Phantom, Backpack, Solflare — all supported. No KYC. No friction.</div>
+      </div>
+      <div class="how-step glass-card reveal">
+        <div class="how-num">02</div>
+        <div class="how-icon">🎟️</div>
+        <div class="how-title">Choose a Tournament</div>
+        <div class="how-desc">Browse active tournaments by prize pool, entry fee, duration, and coin category. Pay the entry fee in SOL or USDC.</div>
+      </div>
+      <div class="how-step glass-card reveal">
+        <div class="how-num">03</div>
+        <div class="how-icon">📈</div>
+        <div class="how-title">Trade & Compete</div>
+        <div class="how-desc">Get $100,000 in virtual capital. Trade real meme coins from your virtual portfolio. ROI is tracked live against all competitors.</div>
+      </div>
+      <div class="how-step glass-card reveal">
+        <div class="how-num">04</div>
+        <div class="how-icon">💸</div>
+        <div class="how-title">Claim Your Winnings</div>
+        <div class="how-desc">Finish in the prize tier and get paid automatically to your wallet on Solana. No manual claims, no delays.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TOURNAMENTS -->
+<section id="tournaments" class="tournaments-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">Active Now</div>
+      <h2 class="section-title">Join a tournament<br><span class="glow-text">before time runs out</span></h2>
+      <p class="section-sub">Competitions filling fast. Real prices, virtual portfolios, real prizes.</p>
+    </div>
+    <div class="tournaments-grid">
+
+      <!-- Tournament 1 -->
+      <div class="tournament-card glass-card reveal">
+        <div class="t-badge live">Live</div>
+        <div class="t-name">BONK Sprint 🏃</div>
+        <div class="t-desc">Pure BONK trading. 24-hour velocity competition. May the fastest ape win.</div>
+        <div class="t-pool">
+          <div class="t-pool-label">Prize Pool</div>
+          <div class="t-pool-val"><span>$12,500</span></div>
+        </div>
+        <div class="t-meta">
+          <div class="t-meta-item">
+            <div class="t-meta-label">Entry Fee</div>
+            <div class="t-meta-val">0.5 SOL</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Players</div>
+            <div class="t-meta-val">847 / 1000</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Duration</div>
+            <div class="t-meta-val">24h</div>
+          </div>
+        </div>
+        <div class="t-timer">
+          <div class="t-timer-block"><div class="t-timer-num" id="h1">08</div><div class="t-timer-lab">hrs</div></div>
+          <div class="t-timer-block"><div class="t-timer-num" id="m1">34</div><div class="t-timer-lab">min</div></div>
+          <div class="t-timer-block"><div class="t-timer-num" id="s1">17</div><div class="t-timer-lab">sec</div></div>
+        </div>
+        <div class="t-progress">
+          <div class="t-progress-top"><span>847 traders joined</span><span>84.7% full</span></div>
+          <div class="t-progress-bar"><div class="t-progress-fill" style="width:84.7%"></div></div>
+        </div>
+        <button class="btn-join">⚡ Join for 0.5 SOL</button>
+      </div>
+
+      <!-- Tournament 2 -->
+      <div class="tournament-card glass-card reveal">
+        <div class="t-badge featured">⭐ Featured</div>
+        <div class="t-name">Meme Coin Grand Slam 👑</div>
+        <div class="t-desc">The biggest weekly event. Trade any meme coin in our universe. Top 50 share the pool.</div>
+        <div class="t-pool">
+          <div class="t-pool-label">Prize Pool</div>
+          <div class="t-pool-val"><span>$50,000</span></div>
+        </div>
+        <div class="t-meta">
+          <div class="t-meta-item">
+            <div class="t-meta-label">Entry Fee</div>
+            <div class="t-meta-val">2 SOL</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Players</div>
+            <div class="t-meta-val">2,104 / 5000</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Duration</div>
+            <div class="t-meta-val">7 days</div>
+          </div>
+        </div>
+        <div class="t-timer">
+          <div class="t-timer-block"><div class="t-timer-num">5</div><div class="t-timer-lab">days</div></div>
+          <div class="t-timer-block"><div class="t-timer-num">12</div><div class="t-timer-lab">hrs</div></div>
+          <div class="t-timer-block"><div class="t-timer-num">44</div><div class="t-timer-lab">min</div></div>
+        </div>
+        <div class="t-progress">
+          <div class="t-progress-top"><span>2,104 traders joined</span><span>42.1% full</span></div>
+          <div class="t-progress-bar"><div class="t-progress-fill" style="width:42.1%"></div></div>
+        </div>
+        <button class="btn-join">🏆 Join Grand Slam</button>
+      </div>
+
+      <!-- Tournament 3 -->
+      <div class="tournament-card glass-card reveal">
+        <div class="t-badge soon">Starting Soon</div>
+        <div class="t-name">WIF Legends Cup 🎩</div>
+        <div class="t-desc">Dogwifhat only. Pure WIF alpha competition. Prove you can read the chart.</div>
+        <div class="t-pool">
+          <div class="t-pool-label">Prize Pool</div>
+          <div class="t-pool-val"><span>$25,000</span></div>
+        </div>
+        <div class="t-meta">
+          <div class="t-meta-item">
+            <div class="t-meta-label">Entry Fee</div>
+            <div class="t-meta-val">1 SOL</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Players</div>
+            <div class="t-meta-val">312 / 2000</div>
+          </div>
+          <div class="t-meta-item">
+            <div class="t-meta-label">Duration</div>
+            <div class="t-meta-val">48h</div>
+          </div>
+        </div>
+        <div class="t-timer">
+          <div class="t-timer-block"><div class="t-timer-num">2</div><div class="t-timer-lab">days</div></div>
+          <div class="t-timer-block"><div class="t-timer-num">08</div><div class="t-timer-lab">hrs</div></div>
+          <div class="t-timer-block"><div class="t-timer-num">00</div><div class="t-timer-lab">min</div></div>
+        </div>
+        <div class="t-progress">
+          <div class="t-progress-top"><span>312 traders pre-registered</span><span>15.6% full</span></div>
+          <div class="t-progress-bar"><div class="t-progress-fill" style="width:15.6%"></div></div>
+        </div>
+        <button class="btn-join btn-soon">🎩 Register Early</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- LEADERBOARD -->
+<section id="leaderboard">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">Season 4 Rankings</div>
+      <h2 class="section-title">The arena's<br><span class="glow-text">elite traders</span></h2>
+      <p class="section-sub">Updated in real-time. Compete to claim your spot at the top.</p>
+    </div>
+    <div class="lb-table reveal">
+      <div class="lb-header">
+        <div>#</div>
+        <div>Trader</div>
+        <div class="lb-col-hide">ROI</div>
+        <div class="lb-col-hide">Win Rate</div>
+        <div class="lb-col-hide">Badges</div>
+        <div>Winnings</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank rank-1">🥇</div>
+        <div class="lb-user">
+          <div class="lb-avatar gold">🦈</div>
+          <div class="lb-user-info">
+            <div class="lb-name">sol_shark</div>
+            <div class="lb-handle">24 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+1,248%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--sol-green);">84%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge champ">Champion</span>
+          <span class="lb-badge streak">12W Streak</span>
+        </div>
+        <div class="lb-winnings">$84,200</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank rank-2">🥈</div>
+        <div class="lb-user">
+          <div class="lb-avatar silver">🔮</div>
+          <div class="lb-user-info">
+            <div class="lb-name">crypto_phoenix</div>
+            <div class="lb-handle">19 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+892%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--sol-green);">77%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge whale">Whale</span>
+          <span class="lb-badge streak">8W Streak</span>
+        </div>
+        <div class="lb-winnings">$56,400</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank rank-3">🥉</div>
+        <div class="lb-user">
+          <div class="lb-avatar bronze">🚀</div>
+          <div class="lb-user-info">
+            <div class="lb-name">moonwatcher</div>
+            <div class="lb-handle">15 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+724%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--sol-green);">71%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge degen">Degen</span>
+        </div>
+        <div class="lb-winnings">$34,800</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank">4</div>
+        <div class="lb-user">
+          <div class="lb-avatar">🦊</div>
+          <div class="lb-user-info">
+            <div class="lb-name">foxtrader</div>
+            <div class="lb-handle">11 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+618%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--sol-green);">68%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge whale">Whale</span>
+        </div>
+        <div class="lb-winnings">$22,100</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank">5</div>
+        <div class="lb-user">
+          <div class="lb-avatar">🎯</div>
+          <div class="lb-user-info">
+            <div class="lb-name">ape_lord</div>
+            <div class="lb-handle">9 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+492%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--sol-green);">63%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge degen">Degen</span>
+          <span class="lb-badge streak">5W Streak</span>
+        </div>
+        <div class="lb-winnings">$18,700</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank">6</div>
+        <div class="lb-user">
+          <div class="lb-avatar">⚡</div>
+          <div class="lb-user-info">
+            <div class="lb-name">sol_degen99</div>
+            <div class="lb-handle">7 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+381%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--text-2);">58%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge degen">Degen</span>
+        </div>
+        <div class="lb-winnings">$12,450</div>
+      </div>
+
+      <div class="lb-row">
+        <div class="lb-rank">7</div>
+        <div class="lb-user">
+          <div class="lb-avatar">🌙</div>
+          <div class="lb-user-info">
+            <div class="lb-name">wifhat_trader</div>
+            <div class="lb-handle">6 wins</div>
+          </div>
+        </div>
+        <div class="lb-roi pos lb-col-hide">+294%</div>
+        <div class="lb-col-hide" style="font-size:14px;color:var(--text-2);">54%</div>
+        <div class="lb-badges lb-col-hide">
+          <span class="lb-badge streak">6W Streak</span>
+        </div>
+        <div class="lb-winnings">$9,200</div>
+      </div>
+
+    </div>
+    <div style="text-align:center;margin-top:28px;">
+      <a href="#" class="btn-secondary">View Full Leaderboard →</a>
+    </div>
+  </div>
+</section>
+
+<!-- COMMUNITY -->
+<section id="community" class="community-section">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">Community</div>
+      <h2 class="section-title">Join 48,000+ traders<br><span class="glow-text">in the arena</span></h2>
+    </div>
+    <div class="community-grid">
+      <div>
+        <div class="community-discord reveal">
+          <div class="discord-logo">💬</div>
+          <div class="discord-title">SolArena Discord</div>
+          <div class="discord-sub">Strategy talk, live callouts, giveaways, tournament alerts, and memes. The arena never sleeps.</div>
+          <div class="discord-stats">
+            <div>
+              <div class="discord-stat-val" style="color:var(--sol-green)">14,204</div>
+              <div class="discord-stat-label">Online Now</div>
+            </div>
+            <div>
+              <div class="discord-stat-val">48,302</div>
+              <div class="discord-stat-label">Total Members</div>
+            </div>
+          </div>
+          <a href="#" class="btn-discord">Join Discord</a>
+        </div>
+        <div style="height:16px;"></div>
+        <div class="winners-feed reveal glass-card" style="padding:20px;">
+          <div style="font-family:var(--font-display);font-weight:700;font-size:15px;margin-bottom:14px;">🎉 Recent Payouts</div>
+          <div class="winners-feed">
+            <div class="winner-row" style="background:rgba(20,241,149,0.05);border-radius:12px;">
+              <div class="winner-emoji">🦈</div>
+              <div class="winner-info">
+                <div class="winner-name">@sol_shark</div>
+                <div class="winner-detail">Won Grand Slam Week 28 · 2h ago</div>
+              </div>
+              <div class="winner-amount">+$18,500</div>
+            </div>
+            <div class="winner-row" style="background:rgba(153,69,255,0.05);border-radius:12px;">
+              <div class="winner-emoji">🔮</div>
+              <div class="winner-info">
+                <div class="winner-name">@crypto_phoenix</div>
+                <div class="winner-detail">Won BONK Sprint #144 · 4h ago</div>
+              </div>
+              <div class="winner-amount">+$4,200</div>
+            </div>
+            <div class="winner-row" style="background:rgba(0,194,255,0.04);border-radius:12px;">
+              <div class="winner-emoji">🚀</div>
+              <div class="winner-info">
+                <div class="winner-name">@moonwatcher</div>
+                <div class="winner-detail">2nd in WIF Cup · 6h ago</div>
+              </div>
+              <div class="winner-amount">+$2,800</div>
+            </div>
+            <div class="winner-row" style="background:rgba(255,110,199,0.04);border-radius:12px;">
+              <div class="winner-emoji">🦊</div>
+              <div class="winner-info">
+                <div class="winner-name">@foxtrader</div>
+                <div class="winner-detail">3rd in Meme Blitz · 8h ago</div>
+              </div>
+              <div class="winner-amount">+$1,600</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testimonials">
+        <div class="testimonial glass-card reveal">
+          <div class="t-quote">SolArena is the only platform where my trading skills actually pay off. Won $4,200 in a single weekend and the payouts hit my wallet in under 3 seconds. This is how crypto gaming should work.</div>
+          <div class="t-author">
+            <div class="t-author-avatar" style="background:rgba(153,69,255,0.15);">🦈</div>
+            <div>
+              <div class="t-author-name">@sol_shark</div>
+              <div class="t-author-handle">Season 4 #1 Ranked · 24 wins</div>
+            </div>
+            <div class="t-stars">★★★★★</div>
+          </div>
+        </div>
+        <div class="testimonial glass-card reveal">
+          <div class="t-quote">The leaderboard is insanely addictive. I never thought I'd be grinding a trading competition at 2am but here we are. The community is electric and the prize pools are legit. 10/10 no brainer.</div>
+          <div class="t-author">
+            <div class="t-author-avatar" style="background:rgba(20,241,149,0.1);">🔮</div>
+            <div>
+              <div class="t-author-name">@crypto_phoenix</div>
+              <div class="t-author-handle">Season 4 #2 Ranked · 19 wins</div>
+            </div>
+            <div class="t-stars">★★★★★</div>
+          </div>
+        </div>
+        <div class="testimonial glass-card reveal">
+          <div class="t-quote">Been using Jupiter and Birdeye for charts, but SolArena is the only place where the competition is real. No bots, no whale manipulation — just skill. The referral program is a nice bonus too.</div>
+          <div class="t-author">
+            <div class="t-author-avatar" style="background:rgba(0,194,255,0.1);">🎯</div>
+            <div>
+              <div class="t-author-name">@ape_lord</div>
+              <div class="t-author-handle">Season 4 #5 Ranked · 9 wins</div>
+            </div>
+            <div class="t-stars">★★★★★</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA BANNER -->
+<div class="cta-banner">
+  <div class="container">
+    <div class="cta-inner reveal">
+      <div class="tag" style="margin-bottom:20px;">Ready to compete?</div>
+      <h2>Your first tournament<br>is waiting</h2>
+      <p>Join 48,000+ traders. Connect your wallet and enter in under 60 seconds.</p>
+      <div class="cta-btns">
+        <a href="#" class="btn-primary">⚡ Connect Wallet & Play</a>
+        <a href="#" class="btn-secondary">👀 Watch Live Tournament</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="tag">FAQ</div>
+      <h2 class="section-title">Common <span class="glow-text">questions</span></h2>
+    </div>
+    <div class="faq-list" style="max-width:720px;margin:0 auto;">
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>Is my actual money at risk when trading?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">No. All trading is done with a virtual $100,000 portfolio using real market prices. Only the entry fee (in SOL or USDC) is real. Your trades are simulated — your prizes are real.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>How are prices determined?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">All prices are sourced in real-time from Jupiter Aggregator and Birdeye APIs, pulling live data from Solana DEXes including Raydium, Orca, and Meteora. There is no price manipulation possible.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>How fast do winnings get paid out?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">Instantly. When a tournament concludes, smart contracts calculate the prize distribution and execute payouts automatically to all winning wallets via Solana. Average settlement time: 0.3 seconds.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>What wallets are supported?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">SolArena supports all major Solana wallets including Phantom, Backpack, Solflare, Glow, and any Wallet Adapter-compatible wallet. Mobile wallets are fully supported.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>How does the referral program work?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">Share your unique referral link. Every time someone you referred pays an entry fee, you earn 10% of that fee — indefinitely. Earnings are paid out to your wallet weekly. There's no cap on referral earnings.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">
+          <span>Are there any geographic restrictions?</span>
+          <span class="faq-icon">+</span>
+        </div>
+        <div class="faq-a">SolArena is available globally with the exception of jurisdictions where participation in skill-based competitions with prizes is legally restricted. Users are responsible for complying with their local regulations.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div>
+        <a href="#" class="nav-logo" style="margin-bottom:12px;display:inline-flex;">
+          <div class="nav-logo-icon">⚡</div>
+          SolArena
+        </a>
+        <p class="footer-brand-tagline">The premier Solana-powered meme coin trading competition platform. Compete with skill. Win real prizes. Built on the fastest chain.</p>
+        <div class="footer-socials">
+          <a href="#" class="footer-social">𝕏</a>
+          <a href="#" class="footer-social">💬</a>
+          <a href="#" class="footer-social">📱</a>
+          <a href="#" class="footer-social">▶</a>
+        </div>
+      </div>
+      <div>
+        <div class="footer-col-title">Platform</div>
+        <ul class="footer-links">
+          <li><a href="#">Tournaments</a></li>
+          <li><a href="#">Leaderboard</a></li>
+          <li><a href="#">How it Works</a></li>
+          <li><a href="#">Referral Program</a></li>
+          <li><a href="#">Season History</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Community</div>
+        <ul class="footer-links">
+          <li><a href="#">Discord Server</a></li>
+          <li><a href="#">Twitter / X</a></li>
+          <li><a href="#">Telegram</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Ambassadors</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <ul class="footer-links">
+          <li><a href="#">FAQ</a></li>
+          <li><a href="#">Documentation</a></li>
+          <li><a href="#">Contact Us</a></li>
+          <li><a href="#">Terms & Conditions</a></li>
+          <li><a href="#">Privacy Policy</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">© 2024 SolArena. All rights reserved.</div>
+      <div class="sol-badge">⚡ Built on Solana</div>
+      <div class="footer-legal">
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Cookies</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ── NAV SCROLL ──
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // ── HAMBURGER MENU ──
+  const hamburger = document.getElementById('hamburger');
+  const drawer = document.getElementById('nav-drawer');
+  hamburger.addEventListener('click', () => {
+    const open = hamburger.classList.toggle('open');
+    drawer.classList.toggle('open', open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  });
+  // Close drawer on link click
+  drawer.querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      hamburger.classList.remove('open');
+      drawer.classList.remove('open');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // ── REVEAL ANIMATIONS ──
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((e, i) => {
+      if (e.isIntersecting) {
+        setTimeout(() => e.target.classList.add('visible'), i * 60);
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+
+  // ── COUNTDOWN TIMER (tournament 1) ──
+  let secs = 8 * 3600 + 34 * 60 + 17;
+  setInterval(() => {
+    secs = Math.max(0, secs - 1);
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    const pad = n => String(n).padStart(2, '0');
+    const el1 = document.getElementById('h1');
+    const el2 = document.getElementById('m1');
+    const el3 = document.getElementById('s1');
+    if (el1) el1.textContent = pad(h);
+    if (el2) el2.textContent = pad(m);
+    if (el3) el3.textContent = pad(s);
+  }, 1000);
+
+  // ── LIVE POOL COUNTER ──
+  let pool = 48200;
+  setInterval(() => {
+    pool += Math.floor(Math.random() * 50);
+    const el = document.getElementById('live-pool');
+    if (el) el.textContent = '$' + pool.toLocaleString();
+  }, 2800);
+
+  // ── FAQ ACCORDION ──
+  document.querySelectorAll('.faq-q').forEach(q => {
+    q.addEventListener('click', () => {
+      const item = q.closest('.faq-item');
+      const isOpen = item.classList.contains('open');
+      document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+      if (!isOpen) item.classList.add('open');
+    });
+  });
+</script>
+</body>
+</html>
